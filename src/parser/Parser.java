@@ -20,4 +20,5 @@ public abstract class Parser {
     
     public abstract void parseLine(String txt);
     public abstract HashMap getHashMap();
+    public abstract String toString();
 }

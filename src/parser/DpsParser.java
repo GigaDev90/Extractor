@@ -44,4 +44,19 @@ public class DpsParser extends Parser {
     public HashMap<String, HashMap> getHashMap() {
         return dps;
     }
+
+    @Override
+    public String toString() {
+        String txt = "";
+        for ( String owner: dps.keySet() ) {
+            HashMap<String, Double> entry = dps.get(owner);
+            txt += owner+"\n";
+            for ( String node : entry.keySet() ) {
+                txt += node+" ";
+                txt += entry.get(node)+"\n";
+            }
+            
+        }
+        return txt;
+    }
 }

@@ -43,7 +43,7 @@ public class Reader {
         }
     }
     
-    public HashMap getHashMap() {
-        return parser.getHashMap();
+    public Parser getParser() {
+        return parser;
     }
 }
