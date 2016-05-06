@@ -5,8 +5,10 @@
  */
 package parser;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.StringTokenizer;
+import util.DpsData;
 
 /**
  *
@@ -14,49 +16,24 @@ import java.util.StringTokenizer;
  */
 public class DpsParser extends Parser {
     
-    private HashMap<String, HashMap> dps;
     private String id;
+    private double time;
     
     public DpsParser () {
-        dps = new HashMap<>();
-    }
-    
-    public HashMap<String, HashMap> getDPS() {
-        return dps;
     }
 
     @Override
     public void parseLine(String txt) {
         StringTokenizer tString = new StringTokenizer(txt);
         if ( txt.startsWith("@") ) {
-            tString.nextToken(" ");
+            time = Double.parseDouble(tString.nextToken(" ").substring(1));
             id = tString.nextToken(" ");
-            dps.put(id, new HashMap<String, Double>());
+            dps.addUniqueId(id);
         } else if (!txt.equals("")) {
             String node = tString.nextToken();
             tString.nextToken();
             Double pred  = Double.parseDouble(tString.nextToken(" "));
-            dps.get(id).put(node, pred);
+            dps.addEntryToId(id, time, node, pred);
         }
     }   
-
-    @Override
-    public HashMap<String, HashMap> getHashMap() {
-        return dps;
-    }
-
-    @Override
-    public String toString() {
-        String txt = "";
-        for ( String owner: dps.keySet() ) {
-            HashMap<String, Double> entry = dps.get(owner);
-            txt += owner+"\n";
-            for ( String node : entry.keySet() ) {
-                txt += node+" ";
-                txt += entry.get(node)+"\n";
-            }
-            
-        }
-        return txt;
-    }
 }

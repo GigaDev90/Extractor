@@ -14,41 +14,29 @@ import java.util.StringTokenizer;
  */
 public class AdjParser extends Parser {
 
-    private HashMap<String, HashMap> dps;
+   
     private String id;
 
     public AdjParser() {
-        dps = new HashMap<>();
-    }
-
-    public HashMap<String, HashMap> getDPS() {
-        return dps;
     }
 
     @Override
     public void parseLine(String txt) {
         StringTokenizer tString = new StringTokenizer(txt);
         if (txt.startsWith("graph")) {
-            //tString.nextToken(" ");
-            //tString.nextToken(" ");
-            System.out.println(tString.nextToken(" "));
-            System.out.println(tString.nextToken(" "));
-            System.out.println(tString.nextToken(" "));
+            tString.nextToken(" ");
+            tString.nextToken(" ");
+            tString.nextToken(" ");
             
-        } else if (!txt.equals("\t")) {
-            //tString.nextToken("-"));
+        } else if (txt.startsWith("\t")) {
+//           
+            String node1 = tString.nextToken("\t-");
+            String node2 = tString.nextToken("-- ");
+            
+            String tmp = tString.nextToken();
+            tmp = tmp.substring(8, tmp.length() - 2);
+            Integer weight = Integer.parseInt(tmp);
+            dps.addRealEncounter(node1, node2, weight);
         }
-    }
-
-    @Override
-    public HashMap<String, HashMap> getHashMap() {
-        return dps;
-    }
-
-    @Override
-    public String toString() {
-        String txt = "";
-        
-        return txt;
     }
 }

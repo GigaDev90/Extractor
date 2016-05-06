@@ -7,6 +7,7 @@ package parser;
 
 import java.util.HashMap;
 import java.util.StringTokenizer;
+import util.DpsData;
 
 /**
  *
@@ -14,11 +15,15 @@ import java.util.StringTokenizer;
  */
 public abstract class Parser {
     
+    protected DpsData dps;
+    
     public Parser() {
-
+       dps = DpsData.getDpsData();
     }
     
+    public DpsData getDpsData() {
+        return dps;
+    }
+
     public abstract void parseLine(String txt);
-    public abstract HashMap getHashMap();
-    public abstract String toString();
 }
