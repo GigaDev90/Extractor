@@ -7,6 +7,8 @@ package util;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  *
@@ -16,13 +18,16 @@ public class DpsData {
 
     private LinkedHashMap<String, MyList> data;
     private LinkedHashMap<Couple, Integer> realEncounter;
-    private  LinkedHashMap<Couple, Integer> estimatedEncounters;
+    private LinkedHashMap<Couple, Integer> estimatedEncounters;
+    private LinkedHashMap<Couple, LinkedHashMap<Double, CouplePlus>> predForCouple;
+    
     private static DpsData dpsData = new DpsData();
 
     private DpsData() {
         data = new LinkedHashMap<>();
         realEncounter = new LinkedHashMap<>();
         estimatedEncounters = new LinkedHashMap<>();
+        predForCouple = new LinkedHashMap<>();
     }
     
     public static DpsData getDpsData() {
@@ -43,9 +48,9 @@ public class DpsData {
             }
         }
         
-        System.out.print("Error: no match found");
-        System.out.println("NodeA "+nodeA+" nodeB "+nodeB);
-        return -1;
+       //System.out.print("Error: no match found");
+       //System.out.println("NodeA "+nodeA+" nodeB "+nodeB);
+        return 0;
     }
     
     public int getEstimatedEnc(Couple entry) {
@@ -78,25 +83,63 @@ public class DpsData {
     }
     
     public void addRealEncounter(String nodeA, String nodeB, Integer n) {
+        if ( nodeA.startsWith("spy") || nodeB.startsWith("spy")) {
+            return;
+        }
         Couple c = new Couple(nodeA, nodeB);
+        for (Couple key : realEncounter.keySet()) {
+            if (key.equals(c)) {
+                realEncounter.put(key, getEstimatedEnc(nodeA, nodeB) + n);
+                if (n == -10) {
+                    System.out.println("test");
+                }
+                return;
+            }
+        }
+        
         realEncounter.put(c, n);
     }
-    
-     public void addEstimatedEnc(String nodeA, String nodeB, Integer n) {
-         Couple c = new Couple(nodeA, nodeB);
-         for ( Couple key: estimatedEncounters.keySet() ) {
-             if ( key.equals(c) ) {
-                 estimatedEncounters.put(key, getEstimatedEnc(nodeA, nodeB) + n);
-                 return;
-             }
-         }
-        
-         estimatedEncounters.put(c, getEstimatedEnc(nodeA, nodeB) + n);
-        
+  
+    public void addEstimatedEnc(String nodeA, String nodeB, Integer n) {
+        if ( nodeA.startsWith("spy") || nodeB.startsWith("spy")) {
+            return;
+        }
+        Couple c = new Couple(nodeA, nodeB);
+        for (Couple key : estimatedEncounters.keySet()) {
+            if (key.equals(c)) {
+                estimatedEncounters.put(key, getEstimatedEnc(nodeA, nodeB) + n);
+                return;
+            }
+        }
+
+        estimatedEncounters.put(c, getEstimatedEnc(nodeA, nodeB) + n);
+
     }
     
+    public void addEncounter(String nodeA, String nodeB, Double time, Double pred) {
+        if ( nodeA.startsWith("spy") || nodeB.startsWith("spy")) {
+            return;
+        }
+        Couple c = new Couple(nodeA, nodeB);
+        CouplePlus cP = new CouplePlus(nodeA, nodeB, pred);
+        for (Couple key : predForCouple.keySet()) {
+            if (key.equals(c)) {
+                predForCouple.get(key).put(time, cP);
+                predForCouple.put(key, predForCouple.get(key));
+                return;
+            }
+        }
+        LinkedHashMap<Double, CouplePlus> tmpList = new LinkedHashMap<>();
+        tmpList.put(time, cP);
+        predForCouple.put(c, tmpList);
+    }
+
     public LinkedHashMap<String, MyList> getData() {
         return data;
+    }
+    
+    public LinkedHashMap<Couple, LinkedHashMap<Double, CouplePlus>> getPredForCouple() {
+        return predForCouple;
     }
     
     public LinkedHashMap<Double, HashMap<String, Double>> getDpsID(String id) {
@@ -106,35 +149,36 @@ public class DpsData {
     public LinkedHashMap<Couple, Integer> getEstimateEncList() {
         return estimatedEncounters;
     }
-
-    class MyList {
-
-        private String id;
-        private LinkedHashMap<Double, HashMap<String, Double>> list;
-
-        public MyList(String id) {
-            this.id = id;
-            list = new LinkedHashMap<>();
-            //estimatedEncounters = new HashMap<>();
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public LinkedHashMap<Double, HashMap<String, Double>> getList() {
-            return list;
-        }
-        
-        @Override
-        public String toString() {
-            return list.toString()+"\n";
-        }
+    
+    public LinkedHashMap<Couple, Integer> getRealEncList() {
+        return realEncounter;
     }
     
     @Override
     public String toString() {
         return data.toString()+"\n"
                 +realEncounter.toString();
+    }
+    
+    public LinkedHashMap<Double, CouplePlus> sort(LinkedHashMap<Double, CouplePlus> list) {
+        Map.Entry<Double, CouplePlus>[] arrayList = new Map.Entry[list.size()];
+        arrayList = list.entrySet().toArray(arrayList);
+        
+        for ( int i = 1; i < arrayList.length; i++ ) {
+            for ( int j = i; j > 0; j-- ) {
+                if ( arrayList[j].getKey() < arrayList[j - 1].getKey() ) {
+                    Map.Entry<Double, CouplePlus> tmp = arrayList[j];
+                    arrayList[j] = arrayList[j - 1];
+                    arrayList[j - 1] = tmp;
+                }
+            }
+        }
+        
+        LinkedHashMap<Double, CouplePlus> sortedList = new LinkedHashMap<>();
+        for ( int i = 0; i < list.size(); i++ ) {
+            sortedList.put(arrayList[i].getKey(), arrayList[i].getValue());
+        }
+        
+        return sortedList;
     }
 }

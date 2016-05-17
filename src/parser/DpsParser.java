@@ -33,6 +33,9 @@ public class DpsParser extends Parser {
             String node = tString.nextToken();
             tString.nextToken();
             Double pred  = Double.parseDouble(tString.nextToken(" "));
+            if ( node.startsWith("spy")) {
+                return;
+            }
             dps.addEntryToId(id, time, node, pred);
         }
     }   

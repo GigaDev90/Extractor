@@ -20,8 +20,8 @@ import util.DpsData;
  */
 public class Extractor {
 
-    private static final String dpsFileLocation = "/home/gabriele/Documenti/git/the-one/reports/PRoPHET2-30siu_SpyDeliveryPredictabilitiesReport.txt";
-    private static final String adjFileLocation = "/home/gabriele/Documenti/git/the-one/reports/PRoPHET2-30siu_AdjacencyGraphvizReport.txt";
+    private static final String dpsFileLocation = "/home/gabriele/Documenti/git/the-one/reports/PRoPHET-30siu_SpyDeliveryPredictabilitiesReport.txt";
+    private static final String adjFileLocation = "/home/gabriele/Documenti/git/the-one/reports/PRoPHET-30siu_AdjacencyGraphvizReport.txt";
 
     /**
      * @param args the command line arguments
@@ -38,7 +38,9 @@ public class Extractor {
        // System.out.println(reader1.getParser().getDpsData().toString());
 
        Core core = new Core(DpsData.getDpsData());
-       core.calculateEstimateEncounters();
+       //core.calculateEstimateEncounters();
+       //core.searchWarmUpTime();
+       core.processData();
     }
 
 }
