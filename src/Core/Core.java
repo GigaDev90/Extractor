@@ -59,7 +59,7 @@ public class Core {
         double pAOld = pred / (Math.pow(GAMMA, dTime));
 
         if (pAOld >= 0.90 && pred > 0.09) {
-            System.out.println("pAOld = " + pAOld + " pred = " + pred + " dTime = " + dTime / secondsInTimeUnit);
+           // System.out.println("pAOld = " + pAOld + " pred = " + pred + " dTime = " + dTime / secondsInTimeUnit);
             if ( pred > 0.90 ) {
                 return 2;
             }
@@ -122,11 +122,11 @@ public class Core {
             int tmpEnc = 0;
             
             for (Map.Entry<Double, CouplePlus> e : data.getPredForCouple().get(key).entrySet()) {
-                System.out.println("id = " + e.getValue().getNodeA() + " entry = " + e.getValue().getNodeB() + " time = " + e.getKey()/ secondsInTimeUnit + " pred = " + e.getValue().getPred());
+                //System.out.println("id = " + e.getValue().getNodeA() + " entry = " + e.getValue().getNodeB() + " time = " + e.getKey()/ secondsInTimeUnit + " pred = " + e.getValue().getPred());
                 if ( first ) {
                     int n = onFirstEncounter(e.getValue().getPred(), (e.getKey() - startTime)/ secondsInTimeUnit);
                     data.addEstimatedEnc(e.getValue().getNodeA(), e.getValue().getNodeB(), n);
-                    System.out.println("increment start = "+n);
+                    //System.out.println("increment start = "+n);
                     first = false;
                     owner = data.getPredForCouple().get(key).get(e.getKey()).getNodeA();
                 } else if ( data.getPredForCouple().get(key).get(e.getKey()).getNodeA().equals(owner) ){
@@ -135,29 +135,27 @@ public class Core {
 
                     if (previousEntry != null) {
                         if (Math.abs(ageDeliveryPreds((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit, previousEntry.getValue().getPred()) - e.getValue().getPred()) > 0.009) {
-                            System.out.println("prev id = " + previousEntry.getValue().getNodeA() + " entry = " + previousEntry.getValue().getNodeB() + " time = " + previousEntry.getKey() / secondsInTimeUnit + " pred = " + previousEntry.getValue().getPred() + " aged = "+ageDeliveryPreds((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit, previousEntry.getValue().getPred()));
+                           // System.out.println("prev id = " + previousEntry.getValue().getNodeA() + " entry = " + previousEntry.getValue().getNodeB() + " time = " + previousEntry.getKey() / secondsInTimeUnit + " pred = " + previousEntry.getValue().getPred() + " aged = "+ageDeliveryPreds((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit, previousEntry.getValue().getPred()));
                             data.addEstimatedEnc(e.getValue().getNodeA(), e.getValue().getNodeB(), 1);
-                            System.out.println("increment 2");
+                           // System.out.println("increment 2");
                             double test = verifyOneEnc(e.getValue().getPred(), previousEntry.getValue().getPred(), (e.getKey() - previousEntry.getKey()) / secondsInTimeUnit);
-                            System.out.println("test = " + test);
-                            
-                            if ( ((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit) > 15 ) {
-                                if (test < 0) {
+                            //System.out.println("test = " + test);
+
+                            if (((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit) > 15) {
+
+                                if (Math.abs(((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit) - test) < 0.5) {
                                     data.addEstimatedEnc(e.getValue().getNodeA(), e.getValue().getNodeB(), 1);
-                                    System.out.println("increment 3");
+                                    System.out.println("increment 2");
+                                    continue;
+
+                                }
+
+                                if (previousEntry.getValue().getPred() < 0.1 && e.getValue().getPred() >= 0.74) {
+                                    System.out.println("increment 1");
+                                    data.addEstimatedEnc(e.getValue().getNodeA(), e.getValue().getNodeB(), 1);
                                     continue;
                                 }
 
-                                if (previousEntry.getValue().getPred() < 0.1 && e.getValue().getPred() >= 0.74 ) {
-                                    System.out.println("increment 4");
-                                    data.addEstimatedEnc(e.getValue().getNodeA(), e.getValue().getNodeB(), 1);
-                                    continue;
-                                }
-
-                                if ( Math.abs(((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit) - test) < 0.5 ) {
-                                    data.addEstimatedEnc(e.getValue().getNodeA(), e.getValue().getNodeB(), 1);
-                                    System.out.println("increment 5");
-                                } 
                             }
                         }
                     }
@@ -167,39 +165,35 @@ public class Core {
                     if (first2) {
                         int n = onFirstEncounter(e.getValue().getPred(), (e.getKey() - startTime) / secondsInTimeUnit);
                         tmpEnc += n;
-                        System.out.println("Second increment start");
+                      //  System.out.println("Second increment start");
                         first2 = false;
                     } else if (previousEntry != null) {
                         if (Math.abs(ageDeliveryPreds((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit, previousEntry.getValue().getPred()) - e.getValue().getPred()) > 0.009) {
                             //nSystem.out.println("prev id = " + previousEntry.getValue().getNodeA() + " entry = " + previousEntry.getValue().getNodeB() + " time = " + previousEntry.getKey() / secondsInTimeUnit + " pred = " + previousEntry.getValue().getPred() + " aged = " + ageDeliveryPreds((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit, previousEntry.getValue().getPred()));
                             tmpEnc++;
-                            System.out.println("Second increment 1");
+                           // System.out.println("Second increment 1");
                             double test = verifyOneEnc(e.getValue().getPred(), previousEntry.getValue().getPred(), (e.getKey() - previousEntry.getKey()) / secondsInTimeUnit);
                             //nSystem.out.println("test = " + test);
-                             if ( ((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit) > 15 ) {
-                                if (test < 0) {
-                                    tmpEnc++;
-                                    System.out.println("Second increment 3");
-                                    continue;
-                                }
+                            if (((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit) > 15) {
 
-                                if (previousEntry.getValue().getPred() < 0.1 && e.getValue().getPred() >= 0.74 ) {
-                                    System.out.println("Second increment 4");
+                                if (Math.abs(((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit) - test) < 0.5) {
                                     tmpEnc++;
                                     continue;
+                                    // System.out.println("Second increment 5");
                                 }
 
-                                if ( Math.abs(((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit) - test) < 0.5 ) {
+                                if (previousEntry.getValue().getPred() < 0.1 && e.getValue().getPred() >= 0.74) {
+                                    // System.out.println("Second increment 4");
                                     tmpEnc++;
-                                    System.out.println("Second increment 5");
-                                } 
+                                    continue;
+                                }
                             }
-                            
+
                         }
                     }
-                }                      
+                }
             }
-            if ( data.getEstimatedEnc(key.getNodeA(), key.getNodeB()) < tmpEnc) {
+            if (data.getEstimatedEnc(key.getNodeA(), key.getNodeB()) < tmpEnc) {
                 data.addEstimatedEnc(key.getNodeA(), key.getNodeB(), tmpEnc - data.getEstimatedEnc(key.getNodeA(), key.getNodeB()));
             }
             //nSystem.out.println("first = "+ data.getEstimatedEnc(key.getNodeA(), key.getNodeB())+" tmpEnc = "+tmpEnc);
@@ -220,7 +214,7 @@ public class Core {
                     if (oldTime == 0 || data.getDpsID(id).get(oldTime).get(entry) == null) {
                         
                         int n = onFirstEncounter(data.getDpsID(id).get(time).get(entry), (time - startTime)/ secondsInTimeUnit);
-                        System.out.println("id = "+id+" entry = "+entry+"\n");
+                        //System.out.println("id = "+id+" entry = "+entry+"\n");
                         
 
                         data.addEstimatedEnc(id, entry, n);
@@ -280,29 +274,59 @@ public class Core {
         int test1 = 0;
         int test3 = 0;
         double rapport = 0;
+        double rapport2 = 0;
         
         for (Couple entry : data.getEstimateEncList().keySet()) {
             //txt1 += data.getEstimatedEnc(entry) + "\n";
             //txt2 += data.getRealEnc(entry.getNodeA(), entry.getNodeB()) + "\n";
             double real = data.getRealEnc(entry.getNodeA(), entry.getNodeB());
             double est = data.getEstimatedEnc(entry);
+           // if ( real < 9 ) continue;
+            
+            for (Couple key : data.getPredForCouple().keySet()) {
+                if (key.equals(entry)) {
+                    boolean first = true;
+                    boolean second = true;
+                    String owner = "";
+
+                    int a = 0, b = 0;
+                    for ( Double time :  data.getPredForCouple().get(key).keySet() ) {
+                       if ( first ) {
+                           first = false;
+                           owner = data.getPredForCouple().get(key).get(time).getNodeA();
+                           a++;
+                       } else if ( owner.equals(data.getPredForCouple().get(key).get(time).getNodeA()) ) {
+                           a++;
+                       } else {
+                           b++;
+                       }
+                            
+                       
+                    }
+                    if ( a > b ) {
+                        txt1 += a + "\n";
+                    } else {
+                        txt1 += b + "\n";
+                    }
+                    
+                    //txt2 += wastTime > wastTime2 ? wastTime + "\n" : wastTime2 + "\n";
+
+                    break;
+                }
+            }
+            
             if (est == 0 && real == 0) {
                 rapport = 1;
-            } else if ( est == 0 ) {
+            } else if (est == 0 ) {
                 est = 1;
                 rapport = real/est;
             } else {
                 rapport = real/est;
             }
             
-            for (Couple key : data.getPredForCouple().keySet()) {
-                if ( key.equals(entry) ) {
-                    txt1 += data.getPredForCouple().get(key).size()+"\n";
-                    txt2 += data.getRealEnc(key.getNodeA(), key.getNodeB())+"\n";
-                }
-            }
-            System.out.println("real = "+(data.getRealEnc(entry.getNodeA(), entry.getNodeB()))+" est = "+(data.getEstimatedEnc(entry)));
-            System.out.println("id = "+entry.getNodeA()+" entry = "+entry.getNodeB()+"\n");
+           
+            //System.out.println("real = "+(data.getRealEnc(entry.getNodeA(), entry.getNodeB()))+" est = "+(data.getEstimatedEnc(entry)));
+           // System.out.println("id = "+entry.getNodeA()+" entry = "+entry.getNodeB()+"\n");
             txt3 += rapport+"\n";
             if (Math.abs(data.getEstimatedEnc(entry) - data.getRealEnc(entry.getNodeA(), entry.getNodeB())) < 5) {
                 test++;
@@ -332,8 +356,8 @@ public class Core {
             bWriter.write(txt3);
             bWriter.write("second set of data");
             bWriter.write(txt1);
-            bWriter.write("thirt set of data");
-            bWriter.write(txt2);
+            //bWriter.write("thirt set of data");
+            //bWriter.write(txt2);
             //bWriter.write("adesso i reali");
             //bWriter.write(txt2);
             bWriter.close();
