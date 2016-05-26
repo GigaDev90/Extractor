@@ -96,13 +96,13 @@ public class Core {
         System.out.println("size EncForCouple = "+data.getPredForCouple().size()+" realEnc = "+data.getRealEncList().size());
         calculateEstimateEncounters2();
     }
-    public Map.Entry<Double, CouplePlus> getPreviousEntry(LinkedHashMap<Double, CouplePlus> list, Map.Entry<Double, CouplePlus> e) {
+    public Map.Entry<Double, CouplePlus> getPreviousEntry(LinkedHashMap<Double, CouplePlus> list, Map.Entry<Double, CouplePlus> e, String owner) {
         Map.Entry<Double, CouplePlus>[] arrayList = new Map.Entry[list.size()];
         arrayList = list.entrySet().toArray(arrayList);
         for ( int i = 0; i < arrayList.length; i++) {
             if ( e == arrayList[i]) {
                 for ( int j = i - 1; j >= 0; j--) {
-                    if ( e.getValue().getNodeA().equals(arrayList[j].getValue().getNodeA())) {
+                    if (owner.equals(arrayList[j].getValue().getNodeA())) {
                         return arrayList[j];
                     }
                 }
@@ -114,30 +114,30 @@ public class Core {
 
     public void calculateEstimateEncounters2() {
         for (Couple key : data.getPredForCouple().keySet()) {
-            
-            //LinkedHashMap<Double, CouplePlus> sortedList = data.sort(data.getPredForCouple().get(key));
+
+            LinkedHashMap<Double, CouplePlus> sortedList = data.sort(data.getPredForCouple().get(key));
             boolean first = true;
             boolean first2 = true;
             String owner = "";
             int tmpEnc = 0;
-            
-            for (Map.Entry<Double, CouplePlus> e : data.getPredForCouple().get(key).entrySet()) {
-                //System.out.println("id = " + e.getValue().getNodeA() + " entry = " + e.getValue().getNodeB() + " time = " + e.getKey()/ secondsInTimeUnit + " pred = " + e.getValue().getPred());
-                if ( first ) {
-                    int n = onFirstEncounter(e.getValue().getPred(), (e.getKey() - startTime)/ secondsInTimeUnit);
+
+            for (Map.Entry<Double, CouplePlus> e : sortedList.entrySet()) {
+               // System.out.println("id = " + e.getValue().getNodeA() + " entry = " + e.getValue().getNodeB() + " time = " + e.getKey() / secondsInTimeUnit + " pred = " + e.getValue().getPred());
+                if (first) {
+                    int n = onFirstEncounter(e.getValue().getPred(), (e.getKey() - startTime) / secondsInTimeUnit);
                     data.addEstimatedEnc(e.getValue().getNodeA(), e.getValue().getNodeB(), n);
-                    //System.out.println("increment start = "+n);
+                   // System.out.println("increment start = "+n);
                     first = false;
-                    owner = data.getPredForCouple().get(key).get(e.getKey()).getNodeA();
-                } else if ( data.getPredForCouple().get(key).get(e.getKey()).getNodeA().equals(owner) ){
-                    Map.Entry<Double, CouplePlus> previousEntry = getPreviousEntry(data.getPredForCouple().get(key), e);
-                    
+                    owner = sortedList.get(e.getKey()).getNodeA();
+                } else if (sortedList.get(e.getKey()).getNodeA().equals(owner)) {
+                    Map.Entry<Double, CouplePlus> previousEntry = getPreviousEntry(sortedList, e, e.getValue().getNodeA());
 
                     if (previousEntry != null) {
+                       // System.out.println("prev id = " + previousEntry.getValue().getNodeA() + " entry = " + previousEntry.getValue().getNodeB() + " time = " + previousEntry.getKey() / secondsInTimeUnit + " pred = " + previousEntry.getValue().getPred() + " aged = " + ageDeliveryPreds((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit, previousEntry.getValue().getPred()));
                         if (Math.abs(ageDeliveryPreds((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit, previousEntry.getValue().getPred()) - e.getValue().getPred()) > 0.009) {
-                           // System.out.println("prev id = " + previousEntry.getValue().getNodeA() + " entry = " + previousEntry.getValue().getNodeB() + " time = " + previousEntry.getKey() / secondsInTimeUnit + " pred = " + previousEntry.getValue().getPred() + " aged = "+ageDeliveryPreds((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit, previousEntry.getValue().getPred()));
+
                             data.addEstimatedEnc(e.getValue().getNodeA(), e.getValue().getNodeB(), 1);
-                           // System.out.println("increment 2");
+                           // System.out.println("increment");
                             double test = verifyOneEnc(e.getValue().getPred(), previousEntry.getValue().getPred(), (e.getKey() - previousEntry.getKey()) / secondsInTimeUnit);
                             //System.out.println("test = " + test);
 
@@ -145,13 +145,13 @@ public class Core {
 
                                 if (Math.abs(((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit) - test) < 0.5) {
                                     data.addEstimatedEnc(e.getValue().getNodeA(), e.getValue().getNodeB(), 1);
-                                    System.out.println("increment 2");
+                                 //   System.out.println("increment 1");
                                     continue;
 
                                 }
 
                                 if (previousEntry.getValue().getPred() < 0.1 && e.getValue().getPred() >= 0.74) {
-                                    System.out.println("increment 1");
+                                   // System.out.println("increment 2");
                                     data.addEstimatedEnc(e.getValue().getNodeA(), e.getValue().getNodeB(), 1);
                                     continue;
                                 }
@@ -159,31 +159,42 @@ public class Core {
                             }
                         }
                     }
+
+                    previousEntry = getPreviousEntry(sortedList, e, e.getValue().getNodeB());
+
+                    if (previousEntry != null) {
+                        if (data.getEstimatedEnc(key.getNodeA(), key.getNodeB()) < tmpEnc) {
+                            data.addEstimatedEnc(key.getNodeA(), key.getNodeB(), tmpEnc - data.getEstimatedEnc(key.getNodeA(), key.getNodeB()));
+                            //System.out.println("align difference");
+                        }
+                    }
+
                 } else {
-                    Map.Entry<Double, CouplePlus> previousEntry = getPreviousEntry(data.getPredForCouple().get(key), e);
+                    Map.Entry<Double, CouplePlus> previousEntry = getPreviousEntry(sortedList, e, e.getValue().getNodeA());
 
                     if (first2) {
                         int n = onFirstEncounter(e.getValue().getPred(), (e.getKey() - startTime) / secondsInTimeUnit);
                         tmpEnc += n;
-                      //  System.out.println("Second increment start");
+                       // System.out.println("Second increment start = "+n);
                         first2 = false;
                     } else if (previousEntry != null) {
+                      // System.out.println("prev id = " + previousEntry.getValue().getNodeA() + " entry = " + previousEntry.getValue().getNodeB() + " time = " + previousEntry.getKey() / secondsInTimeUnit + " pred = " + previousEntry.getValue().getPred() + " aged = " + ageDeliveryPreds((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit, previousEntry.getValue().getPred()));
                         if (Math.abs(ageDeliveryPreds((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit, previousEntry.getValue().getPred()) - e.getValue().getPred()) > 0.009) {
-                            //nSystem.out.println("prev id = " + previousEntry.getValue().getNodeA() + " entry = " + previousEntry.getValue().getNodeB() + " time = " + previousEntry.getKey() / secondsInTimeUnit + " pred = " + previousEntry.getValue().getPred() + " aged = " + ageDeliveryPreds((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit, previousEntry.getValue().getPred()));
                             tmpEnc++;
-                           // System.out.println("Second increment 1");
+                           // System.out.println("Second increment");
                             double test = verifyOneEnc(e.getValue().getPred(), previousEntry.getValue().getPred(), (e.getKey() - previousEntry.getKey()) / secondsInTimeUnit);
                             //nSystem.out.println("test = " + test);
                             if (((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit) > 15) {
 
                                 if (Math.abs(((e.getKey() - previousEntry.getKey()) / secondsInTimeUnit) - test) < 0.5) {
                                     tmpEnc++;
+                                   // System.out.println("Second increment 1");
                                     continue;
-                                    // System.out.println("Second increment 5");
+                                    
                                 }
 
                                 if (previousEntry.getValue().getPred() < 0.1 && e.getValue().getPred() >= 0.74) {
-                                    // System.out.println("Second increment 4");
+                                    //System.out.println("Second increment 2");
                                     tmpEnc++;
                                     continue;
                                 }
@@ -191,10 +202,20 @@ public class Core {
 
                         }
                     }
+
+                    previousEntry = getPreviousEntry(sortedList, e, e.getValue().getNodeB());
+
+                    if (previousEntry != null) {
+                        if (data.getEstimatedEnc(key.getNodeA(), key.getNodeB()) > tmpEnc) {
+                            tmpEnc = data.getEstimatedEnc(key.getNodeA(), key.getNodeB());
+                            //System.out.println("align difference 2");
+                        }
+                    }
                 }
             }
             if (data.getEstimatedEnc(key.getNodeA(), key.getNodeB()) < tmpEnc) {
                 data.addEstimatedEnc(key.getNodeA(), key.getNodeB(), tmpEnc - data.getEstimatedEnc(key.getNodeA(), key.getNodeB()));
+                //System.out.println("last align");
             }
             //nSystem.out.println("first = "+ data.getEstimatedEnc(key.getNodeA(), key.getNodeB())+" tmpEnc = "+tmpEnc);
         }
@@ -263,7 +284,7 @@ public class Core {
     }
 
     public void result() {
-        // for (String id : data.getData().keySet()) {
+        boolean withoutTransitive = true;
         String txt1 = "";
         String txt2 = "";
         String txt3 = "";
@@ -274,7 +295,6 @@ public class Core {
         int test1 = 0;
         int test3 = 0;
         double rapport = 0;
-        double rapport2 = 0;
         
         for (Couple entry : data.getEstimateEncList().keySet()) {
             //txt1 += data.getEstimatedEnc(entry) + "\n";
@@ -282,35 +302,28 @@ public class Core {
             double real = data.getRealEnc(entry.getNodeA(), entry.getNodeB());
             double est = data.getEstimatedEnc(entry);
            // if ( real < 9 ) continue;
-            
+            int summ = 0;
             for (Couple key : data.getPredForCouple().keySet()) {
                 if (key.equals(entry)) {
-                    boolean first = true;
-                    boolean second = true;
-                    String owner = "";
-
-                    int a = 0, b = 0;
+//                    boolean first = true;
+//                    boolean second = true;
+//                    String owner = "";
+//
+//                    int a = 0, b = 0;
                     for ( Double time :  data.getPredForCouple().get(key).keySet() ) {
-                       if ( first ) {
-                           first = false;
-                           owner = data.getPredForCouple().get(key).get(time).getNodeA();
-                           a++;
-                       } else if ( owner.equals(data.getPredForCouple().get(key).get(time).getNodeA()) ) {
-                           a++;
-                       } else {
-                           b++;
-                       }
-                            
-                       
+                        if ( data.getPredForCouple().get(key).get(time).getPred() > 0.1 ) {
+                            summ++;
+                        }
                     }
-                    if ( a > b ) {
-                        txt1 += a + "\n";
-                    } else {
-                        txt1 += b + "\n";
-                    }
-                    
+//                    if ( a > b ) {
+//                        txt1 += a + "\n";
+//                    } else {
+//                        txt1 += b + "\n";
+//                    }
+//                    
                     //txt2 += wastTime > wastTime2 ? wastTime + "\n" : wastTime2 + "\n";
-
+                    txt1 += summ+"\n";
+                    //test4 = summ;
                     break;
                 }
             }
@@ -318,16 +331,24 @@ public class Core {
             if (est == 0 && real == 0) {
                 rapport = 1;
             } else if (est == 0 ) {
-                est = 1;
-                rapport = real/est;
+                //est = 1;
+                rapport = -real;
             } else {
                 rapport = real/est;
             }
             
            
             //System.out.println("real = "+(data.getRealEnc(entry.getNodeA(), entry.getNodeB()))+" est = "+(data.getEstimatedEnc(entry)));
-           // System.out.println("id = "+entry.getNodeA()+" entry = "+entry.getNodeB()+"\n");
-            txt3 += rapport+"\n";
+            //System.out.println("id = "+entry.getNodeA()+" entry = "+entry.getNodeB()+"\n");
+            if (withoutTransitive) {
+                txt3 += rapport + "\n";
+            } else if (est == 0 && real == 0) {
+                txt3 += 1 + "\n";
+            } else {
+                txt3 += ((rapport * 8) + 0.9) + "\n";
+            }
+            txt2 += real+ "\n";
+                
             if (Math.abs(data.getEstimatedEnc(entry) - data.getRealEnc(entry.getNodeA(), entry.getNodeB())) < 5) {
                 test++;
             }
@@ -356,8 +377,8 @@ public class Core {
             bWriter.write(txt3);
             bWriter.write("second set of data");
             bWriter.write(txt1);
-            //bWriter.write("thirt set of data");
-            //bWriter.write(txt2);
+            bWriter.write("thirt set of data");
+            bWriter.write(txt2);
             //bWriter.write("adesso i reali");
             //bWriter.write(txt2);
             bWriter.close();
