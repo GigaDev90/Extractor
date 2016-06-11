@@ -28,7 +28,7 @@ public class DpsParser extends Parser {
         if ( txt.startsWith("@") ) {
             time = Double.parseDouble(tString.nextToken(" ").substring(1));
             id = tString.nextToken(" ");
-            dps.addUniqueId(id);
+            //dps.addUniqueId(id);
         } else if (!txt.equals("")) {
             String node = tString.nextToken();
             tString.nextToken();
@@ -36,7 +36,7 @@ public class DpsParser extends Parser {
             if ( node.startsWith("spy")) {
                 return;
             }
-            dps.addEntryToId(id, time, node, pred);
+            dps.addEncounter(id, node, time, pred);
         }
     }   
 }

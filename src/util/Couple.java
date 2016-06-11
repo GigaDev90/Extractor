@@ -32,13 +32,19 @@ public class Couple {
         return nodeA + " " + nodeB;
     }
 
-    public boolean equals(Couple c) {
-        if (c.getNodeA().equals(nodeA) && c.getNodeB().equals(nodeB)) {
+    @Override
+    public boolean equals(Object c) {
+        if (((Couple)c).getNodeA().equals(nodeA) && ((Couple)c).getNodeB().equals(nodeB)) {
             return true;
-        } else if (c.getNodeA().equals(nodeB) && c.getNodeB().equals(nodeA)) {
+        } else if (((Couple)c).getNodeA().equals(nodeB) && ((Couple)c).getNodeB().equals(nodeA)) {
             return true;
         }
 
         return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return this.nodeA.hashCode() + this.nodeB.hashCode();
     }
 }

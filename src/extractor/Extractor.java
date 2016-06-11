@@ -20,8 +20,8 @@ import util.DpsData;
  */
 public class Extractor {
 
-    private static final String dpsFileLocation = "/home/gabriele/Documenti/git/the-one/reports/PRoPHET-30siu_SpyDeliveryPredictabilitiesReport.txt";
-    private static final String adjFileLocation = "/home/gabriele/Documenti/git/the-one/reports/PRoPHET-30siu_AdjacencyGraphvizReport.txt";
+    public static final String dpsFileLocation = "/home/gabriele/Documenti/git/the-one/reports/PRoPHET-43200 - fixed Path_SpyDeliveryPredictabilitiesReport.txt";
+    public static final String adjFileLocation = "/home/gabriele/Documenti/git/the-one/reports/PRoPHET-43200 - fixed Path_AdjacencyGraphvizReport.txt";
 
     /**
      * @param args the command line arguments
@@ -29,18 +29,18 @@ public class Extractor {
     public static void main(String[] args) {
         Reader reader = new Reader(new File(dpsFileLocation), new DpsParser());
         reader.read();
-        
-       //System.out.println(reader.getParser().getDpsData().toString());
-        
+
+        //System.out.println(reader.getParser().getDpsData().toString());
         Reader reader1 = new Reader(new File(adjFileLocation), new AdjParser());
         reader1.read();
 
-       // System.out.println(reader1.getParser().getDpsData().toString());
-
-       Core core = new Core(DpsData.getDpsData());
-       //core.calculateEstimateEncounters();
-       //core.searchWarmUpTime();
-       core.processData();
+        // System.out.println(reader1.getParser().getDpsData().toString());
+        Core core = new Core(DpsData.getDpsData());
+        //core.calculateEstimateEncounters();
+        core.calcEstimateEnc();
+        core.extractData();
+        //core.result();
+        //core.searchWarmUpTime();
     }
 
 }
