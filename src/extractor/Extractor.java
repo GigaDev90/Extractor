@@ -39,7 +39,7 @@ public class Extractor {
         //core.calculateEstimateEncounters();
         core.calcEstimateEnc();
         core.extractData();
-        //core.result();
+        core.test();
         //core.searchWarmUpTime();
     }
 

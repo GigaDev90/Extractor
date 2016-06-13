@@ -6,17 +6,24 @@
 package Core;
 
 import extractor.Extractor;
-import java.io.BufferedWriter;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.net.MalformedURLException;
+import java.io.InputStream;
+import java.io.PushbackInputStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.StringTokenizer;
-import org.apache.poi.hssf.usermodel.HSSFRow;
-import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.POIXMLDocument;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.poifs.filesystem.POIFSFileSystem;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import util.Couple;
 import util.CouplePlus;
 import util.DpsData;
@@ -181,11 +188,11 @@ public class Core {
             //calc real/est;
             if ( entry.getValue() == 0 && data.getRealEnc(entry.getKey()) == 0 ) {
                 rapport[i] = 1;
-            } else if ( entry.getValue() == 0 || data.getRealEnc(entry.getKey()) == 0 ) {
+            } else if ( entry.getValue() == 0 ) {
                 noEnc++;
-                continue;
+                rapport[i] = -1;
             } else {
-                rapport[i] = data.getRealEnc(entry.getKey()) / entry.getValue();
+                rapport[i] = (double)data.getRealEnc(entry.getKey()) / (double)entry.getValue();
             }
             
             //save sample
@@ -197,114 +204,59 @@ public class Core {
             //real enc
             real[i] = data.getRealEnc(entry.getKey());
             
-            System.out.println("raport = "+rapport[i]+" sample = "+sample[i]+" errorforCouple = "+errorForCouple[i]+" real[i] = "+real[i]);
+          //  System.out.println("raport = "+rapport[i]+" sample = "+sample[i]+" errorforCouple = "+errorForCouple[i]+" real[i] = "+real[i]);
             i++;
         }
         
         printRes(rapport, errorForCouple, sample, real, noEnc);
     }
 
-    public void result() {
-        String txt0 = "";
-        String txt1 = "";
-        String txt2 = "";
-        String txt3 = "";
-        int test = 0;
-        int testA = 0;
-        int testB = 0;
-        int testC = 0;
-        int test1 = 0;
-        int test3 = 0;
+    public void test() {
+        int soglia5 = 0;
+        int soglia3 = 0;
+        int over = 0;
+        int erroreInEccesso = 0;
+        int tot = 0;
+        int erroreAssoluto = 0;
+        int falseEnc = 0;
         double rapport = 0;
         
         for (Couple entry : data.getEstimateEncList().keySet()) {
-            //txt1 += data.getEstimatedEnc(entry) + "\n";
-            //txt2 += data.getRealEnc(entry.getNodeA(), entry.getNodeB()) + "\n";
+
             double real = data.getRealEnc(entry);
             double est = data.getEstimatedEnc(entry);
-           // if ( real < 9 ) continue;
-            int summ = 0;
-            for (Couple key : data.getPredForCouple().keySet()) {
-                if (key.equals(entry)) {
-//                    boolean first = true;
-//                    boolean second = true;
-//                    String owner = "";
-//
-//                    int a = 0, b = 0;
-                    for ( Double time :  data.getPredForCouple().get(key).keySet() ) {
-                        if ( data.getPredForCouple().get(key).get(time).getPred() > 0.1 ) {
-                            summ++;
-                        }
-                    }
-//                    if ( a > b ) {
-//                        txt1 += a + "\n";
-//                    } else {
-//                        txt1 += b + "\n";
-//                    }
-//                    
-                    //txt2 += wastTime > wastTime2 ? wastTime + "\n" : wastTime2 + "\n";
-                    txt1 += summ+"\n";
-                    //test4 = summ;
-                    break;
-                }
-            }
+
             
             if (est == 0 && real == 0) {
                 rapport = 1;
             } else if (est == 0 ) {
-                //System.out.println("patatrack");
-               continue;
+                falseEnc++;
             } else {
                 rapport = real/est;
             }
             
-           
-            //System.out.println("real = "+(data.getRealEnc(entry.getNodeA(), entry.getNodeB()))+" est = "+(data.getEstimatedEnc(entry)));
-            //System.out.println("id = "+entry.getNodeA()+" entry = "+entry.getNodeB()+"\n");
-           
-            txt3 += rapport + "\n";
-            txt0 += real + "\n";
-          
-            
-            txt2 += Math.abs(data.getEstimatedEnc(entry) - data.getRealEnc(entry))+ "\n";
                 
             if (Math.abs(data.getEstimatedEnc(entry) - data.getRealEnc(entry)) < 5) {
-                test++;
+                soglia5++;
             }
             if (Math.abs(data.getEstimatedEnc(entry) - data.getRealEnc(entry)) < 3) {
-                testA++;
+                soglia3++;
             }
             if (rapport < 1) {
-                testB++;
+                over++;
             }
-            test1++;
+            tot++;
+
+            erroreAssoluto += Math.abs(data.getEstimatedEnc(entry) - data.getRealEnc(entry));
+            erroreInEccesso += (data.getEstimatedEnc(entry) - data.getRealEnc(entry));
+
+        }
+
+        System.out.println("soglia5 = " + soglia5 + " soglia3 = " + soglia3 + "  minore di zero = " + over + " su = " + tot);
+        System.out.println("error Assoluto = " + erroreAssoluto + " errore in eccesso " + erroreInEccesso);
+        System.out.println("falsi incontri = " + falseEnc);
+
      
-            //if ( Math.abs(data.getEstimatedEnc(entry) - data.getRealEnc(entry.getNodeA(), entry.getNodeB())) < 20 )
-            test3 += Math.abs(data.getEstimatedEnc(entry) - data.getRealEnc(entry));
-            testC += (data.getEstimatedEnc(entry) - data.getRealEnc(entry));
-            //testC += (data.getRealEnc(entry.getNodeA(), entry.getNodeB()) - data.getEstimatedEnc(entry));
-            //System.out.println("Estimate enc of " + entry.getNodeA() + " to encounter " + entry.getNodeB() + " = " + data.getEstimatedEnc(entry) + " real = " + data.getRealEnc(entry.getNodeA(), entry.getNodeB()));
-            //System.out.println("history of "+id+" "+data.getDpsID(id).toString());
-        }
-
-        System.out.println("soglia5 = " + test + " soglia3 = " + testA + "  soglia2 = " + testB + " su = " + test1);
-        System.out.println("error = " + test3 + " error2 " + testC);
-
-        try {
-            FileWriter writer = new FileWriter("/home/gabriele/Documenti/risultati.txt");
-            BufferedWriter bWriter = new BufferedWriter(writer);
-            bWriter.write(txt3);
-            bWriter.write("second set of data");
-            bWriter.write(txt0);
-            bWriter.write("thirt set of data");
-            bWriter.write(txt2);
-            //bWriter.write("adesso i reali");
-            //bWriter.write(txt2);
-            bWriter.close();
-            writer.close();
-        } catch (MalformedURLException e) {
-        } catch (IOException e) {
-        }
     }
     
 //    public void searchWarmUpTime() {
@@ -328,32 +280,53 @@ public class Core {
     
     public void printRes(double[] rapport, int[] errorForCouple, int[] sample, int[] real, int noEnc) {
         StringTokenizer st = new StringTokenizer(Extractor.dpsFileLocation);
-        String name = st.nextToken("reports/");
-       // String name = st.nextToken("_");
-         try {
-            String filename = "/home/gabriele/Documenti/resultOf"+name+".ods" ;
-            HSSFWorkbook workbook = new HSSFWorkbook();
-            HSSFSheet sheet = workbook.createSheet("FirstSheet");  
+        st.nextToken("-");
+        st.nextToken("-");
+        String name = st.nextToken("_");
+        //int numOfPage = 4;
+        
+        try {
 
-            HSSFRow rowhead = sheet.createRow((short)0);
+            String filename = "/home/gabriele/Documenti/risultati prophetSpy/result " + name + ".xlsx";
+            FileInputStream fileInput = null;
+            Sheet sheet;
+            Workbook workbook = null;
+            try {
+                fileInput = new FileInputStream(filename);
+                workbook = create(fileInput);
+                sheet = workbook.getSheetAt(0);
+                
+                System.out.println("found xlsx file");
+            } catch (FileNotFoundException fileNotFoundException) {
+                workbook = new XSSFWorkbook();
+                sheet = workbook.createSheet("foglio 1");
+               
+                System.out.println("no file found");
+            }
+            
+            Row rowhead = sheet.createRow(0);
             rowhead.createCell(0).setCellValue("rapport");
             rowhead.createCell(1).setCellValue("errorForCouple");
             rowhead.createCell(2).setCellValue("sample");
             rowhead.createCell(3).setCellValue("real");
-            rowhead.createCell(4).setCellValue("noEnc");
+            rowhead.createCell(7).setCellValue("est = 0");
+            rowhead.createCell(8).setCellValue("Total Couple");
 
-            for ( int i = 0; i < rapport.length; i++ ) {
-                HSSFRow row = sheet.createRow((short)i+1);
-                row.createCell(0).setCellValue(rapport[i]);
-                row.createCell(1).setCellValue(errorForCouple[i]);
-                row.createCell(2).setCellValue(sample[i]);
-                row.createCell(3).setCellValue(real[i]);
-                
-                if ( i == 0 )
-                    row.createCell(4).setCellValue(noEnc);
-
+            int numRow = 1;
+            for (int j = 0; j < rapport.length; j++) {
+                if (rapport[j] != -1) {
+                    Row row = sheet.createRow(numRow);
+                    row.createCell(0).setCellValue(rapport[j]);
+                    row.createCell(1).setCellValue(errorForCouple[j]);
+                    row.createCell(2).setCellValue(sample[j]);
+                    row.createCell(3).setCellValue(real[j]);
+                    numRow++;
+                }
             }
 
+            sheet.getRow(1).createCell(7).setCellValue(noEnc);
+            sheet.getRow(1).createCell(8).setCellValue(rapport.length);
+            
             FileOutputStream fileOut = new FileOutputStream(filename);
             workbook.write(fileOut);
             fileOut.close();
@@ -362,5 +335,27 @@ public class Core {
         } catch ( Exception ex ) {
             System.out.println(ex);
         }
+    }
+    
+    /**
+     * Creates the appropriate HSSFWorkbook / XSSFWorkbook from
+     *  the given InputStream.
+     * Your input stream MUST either support mark/reset, or
+     *  be wrapped as a {@link PushbackInputStream}!
+     */
+    public Workbook create(InputStream inp) throws InvalidFormatException, IOException {
+            // If clearly doesn't do mark/reset, wrap up
+            if (!inp.markSupported()) {
+                inp = new PushbackInputStream(inp, 8);
+            }
+            
+            if (POIFSFileSystem.hasPOIFSHeader(inp)) {
+                return new HSSFWorkbook(inp);
+            }
+            if (POIXMLDocument.hasOOXMLHeader(inp)) {
+                return new XSSFWorkbook(OPCPackage.open(inp));
+            }
+            throw new IllegalArgumentException("Your InputStream was neither an OLE2 stream, nor an OOXML stream");
+      
     }
 }
