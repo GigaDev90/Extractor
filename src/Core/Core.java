@@ -5,6 +5,8 @@
  */
 package Core;
 
+import static Core.Analize.SECONDINTIMEUNIT;
+import static Core.Analize.STARTTIME;
 import extractor.Extractor;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -35,57 +37,12 @@ import util.DpsData;
 public class Core {
 
     private final DpsData data;
-    public static final double P_INIT = 0.75;
-    public static final double DEFAULT_BETA = 0.25;
-    public static final int SECONDINTIMEUNIT = 30;
-    public static final double STARTTIME = 9000;
-    public static final double GAMMA = 0.98;
+    private final Analize analize;
+
 
     public Core(DpsData data) {
         this.data = data;
-    }
-
-    private double updateDeliveryPredFor(double oldValue) {
-        return oldValue + (1 - oldValue) * P_INIT;
-    }
-
-    private double logOfBase(double base, double num) {
-        return Math.log(num) / Math.log(base);
-    }
-
-    private double ageDeliveryPreds(double time, double pred) {
-        if (time == 0) {
-            return pred;
-        }
-
-        double mult = Math.pow(GAMMA, time);
-        return pred * mult;
-    }
-
-    private int onFirstEncounter(double pred, double dTime) {
-        double pAOld = pred / (Math.pow(GAMMA, dTime));
-
-        if (pAOld >= 0.85 && pred > 0.000001) {
-           // System.out.println("pAOld = " + pAOld + " pred = " + pred + " dTime = " + dTime / SECONDINTIMEUNIT);
-            if ( pred > 0.80 ) {
-                return 2;
-            }
-            return 1;
-        }
-        
-        return 0;
-    }
-
-    private double encounterTime(double newPred, double oldPred, double time) {
-        double nm = newPred - (Math.pow(GAMMA, time) * (oldPred - (oldPred * P_INIT)));
-        double dnm = Math.pow(GAMMA, time) * P_INIT;
-        double w = -logOfBase(GAMMA, nm / dnm);
-        //System.out.println("w = "+w+" time = "+time);
-//        double oldPreAndDecay = ageDeliveryPreds(w, oldPred);
-//        double oldPredAndEnc = updateDeliveryPredFor(oldPreAndDecay);
-//        double testNew = ageDeliveryPreds(time - w, oldPredAndEnc);
-
-        return w;
+        analize = new AnalizeWithTransRule();
     }
     
     public void calcEstimateEnc() {
@@ -103,14 +60,14 @@ public class Core {
                     
                     previousEntryA = keyTime_valueCouple;
                     double dTime = (keyTime_valueCouple.getKey() - STARTTIME) / SECONDINTIMEUNIT;
-                    int n = onFirstEncounter(keyTime_valueCouple.getValue().getPred(), dTime);
+                    int n = analize.onFirstEncounter(keyTime_valueCouple.getValue().getPred(), dTime);
                     data.addEstimatedEnc(keyTime_valueCouple.getValue(), n);
                     //System.out.println("start NodeA with "+keyTime_valueCouple.getValue().getNodeA()+" first enc = "+n);
                   
 
                 } else if (previousEntryA.getValue().getNodeA().equals(keyTime_valueCouple.getValue().getNodeA())) {
                   //  System.out.println("branch "+keyTime_valueCouple.getValue().getNodeA());
-                    int n = analize(previousEntryA, keyTime_valueCouple);
+                    int n = analize.analize(previousEntryA, keyTime_valueCouple);
                     data.addEstimatedEnc(keyTime_valueCouple.getValue(), n);
                     previousEntryA = keyTime_valueCouple;
                     //System.out.println("inc enc by = "+n+" owner = "+keyTime_valueCouple.getValue().getNodeA());
@@ -123,7 +80,7 @@ public class Core {
                     
                     previousEntryB = keyTime_valueCouple;
                     double dTime = (keyTime_valueCouple.getKey() - STARTTIME) / SECONDINTIMEUNIT;
-                    tmpEnc = onFirstEncounter(keyTime_valueCouple.getValue().getPred(), dTime);
+                    tmpEnc = analize.onFirstEncounter(keyTime_valueCouple.getValue().getPred(), dTime);
                     //System.out.println("start NodeB with "+keyTime_valueCouple.getValue().getNodeA()+" first enc = "+tmpEnc);
                     if ( tmpEnc < data.getEstimatedEnc(keyTime_valueCouple.getValue()) ) {
                         tmpEnc = data.getEstimatedEnc(keyTime_valueCouple.getValue());
@@ -132,7 +89,7 @@ public class Core {
 
                 } else {
                    // System.out.println("branch "+keyTime_valueCouple.getValue().getNodeA());
-                    int n = analize(previousEntryB, keyTime_valueCouple);
+                    int n = analize.analize(previousEntryB, keyTime_valueCouple);
                     tmpEnc += n;
                     previousEntryB = keyTime_valueCouple;
                     //System.out.println("inc enc by = "+n+" owner = "+keyTime_valueCouple.getValue().getNodeA());
@@ -150,31 +107,6 @@ public class Core {
 
     }
     
-    
-    private int analize(Map.Entry<Double, CouplePlus> previousEntry, Map.Entry<Double, CouplePlus> entry) {
-
-        int enc = 0;
-        double dTime = (entry.getKey() - previousEntry.getKey()) / SECONDINTIMEUNIT;
-        double aged = ageDeliveryPreds(dTime, previousEntry.getValue().getPred());
-        //System.out.printf("aged = %f\n", aged);
-        if (Math.abs(aged - entry.getValue().getPred()) > 0.000001) {
-            //System.out.println("inc");
-            enc++;
-            
-            double encounterTime = encounterTime(entry.getValue().getPred(), previousEntry.getValue().getPred(), dTime);
-
-            if ( encounterTime > dTime ) {
-                enc++;
-                //System.out.println("double inc");
-                if ( (encounterTime - dTime) > 10 ) {
-                    // System.out.println("triple inc");
-                    enc++;
-                }
-            }  
-        } 
-        return enc;
-    }
-   
     public void extractData() {
         double rapport[] = new double[data.getEstimateEncList().size()];
         int errorForCouple[] = new int[data.getEstimateEncList().size()];
@@ -219,6 +151,7 @@ public class Core {
         int tot = 0;
         int erroreAssoluto = 0;
         int falseEnc = 0;
+        int zero = 0;
         double rapport = 0;
         
         for (Couple entry : data.getEstimateEncList().keySet()) {
@@ -229,10 +162,15 @@ public class Core {
             
             if (est == 0 && real == 0) {
                 rapport = 1;
+                zero++;
             } else if (est == 0 ) {
                 falseEnc++;
             } else {
                 rapport = real/est;
+                
+                if (rapport < 1) {
+                    over++;
+                }
             }
             
                 
@@ -242,9 +180,7 @@ public class Core {
             if (Math.abs(data.getEstimatedEnc(entry) - data.getRealEnc(entry)) < 3) {
                 soglia3++;
             }
-            if (rapport < 1) {
-                over++;
-            }
+           
             tot++;
 
             erroreAssoluto += Math.abs(data.getEstimatedEnc(entry) - data.getRealEnc(entry));
@@ -252,8 +188,8 @@ public class Core {
 
         }
 
-        System.out.println("soglia5 = " + soglia5 + " soglia3 = " + soglia3 + "  minore di zero = " + over + " su = " + tot);
-        System.out.println("error Assoluto = " + erroreAssoluto + " errore in eccesso " + erroreInEccesso);
+        System.out.println("soglia5 = " + soglia5 + " work = "+(soglia5 - 5264) + " soglia3 = " + soglia3 + "  minore di zero = " + over + " su = " + tot);
+        System.out.println("error Assoluto = " + erroreAssoluto + " errore in eccesso " + erroreInEccesso + " zero real/est = " + zero);
         System.out.println("falsi incontri = " + falseEnc);
 
      
