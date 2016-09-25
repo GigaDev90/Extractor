@@ -32,20 +32,25 @@ public class AnalizeWithTransRule extends Analize {
         double dTime = (entry.getKey() - previousEntry.getKey()) / SECONDINTIMEUNIT;
         double aged = ageDeliveryPreds(dTime, previousEntry.getValue().getPred());
         //System.out.printf("aged = %f\n", aged);
-        if (Math.abs(aged - entry.getValue().getPred()) > 0.58) {
+        //if (Math.abs(aged - entry.getValue().getPred()) > 0.58) {
             //System.out.println("inc");
-            enc++;
+          //  enc++;
 
             double encounterTime = encounterTime(entry.getValue().getPred(), previousEntry.getValue().getPred(), dTime);
 
                 //enc++;
                 //System.out.println("double inc");
-                if ((encounterTime - dTime) > 10) {
+                if (encounterTime > dTime ) {
                     // System.out.println("triple inc");
                     enc++;
                 }
+                if (encounterTime > dTime  && entry.getValue().getPred() > previousEntry.getValue().getPred() ) {
+                    System.out.println("true!!!!!!!!!!!1");
+                } else if ( encounterTime > dTime  && entry.getValue().getPred() < previousEntry.getValue().getPred()) {
+                    System.out.println("false!!!!!!!!!!!1");
+                }
             
-        }
+        //}
         return enc;
     }
 

@@ -12,7 +12,7 @@ package util;
 public class CouplePlus extends Couple{
     
     private double pred;
-    
+        
     public CouplePlus(String nodeA, String nodeB, double pred) {
         super(nodeA, nodeB);
         this.pred = pred;
@@ -25,5 +25,5 @@ public class CouplePlus extends Couple{
     public void setPred(double pred) {
         this.pred = pred;
     }
-    
+
 }

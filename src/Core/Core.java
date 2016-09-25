@@ -42,10 +42,19 @@ public class Core {
 
     public Core(DpsData data) {
         this.data = data;
-        analize = new AnalizeWithTransRule();
+       
+        if ( Extractor.dpsFileLocation.contains("with transRule") ) {
+            analize = new AnalizeWithTransRule();
+            System.out.println("transRule Sample");
+        } else {
+            analize = new AnalizeWithoutTransRule();
+            System.out.println("simple Sample");
+        }
+        
     }
     
     public void calcEstimateEnc() {
+        
         for (Couple key : data.getPredForCouple().keySet()) {
 
             LinkedHashMap<Double, CouplePlus> sortedList = data.sort(data.getPredForCouple().get(key));
@@ -54,7 +63,7 @@ public class Core {
             int tmpEnc = 0;
             
             for (Map.Entry<Double, CouplePlus> keyTime_valueCouple : sortedList.entrySet()) {
-              // System.out.println("id = " + keyTime_valueCouple.getValue().getNodeA() + " entry = " + keyTime_valueCouple.getValue().getNodeB() + " time = " + keyTime_valueCouple.getKey() / SECONDINTIMEUNIT + " pred = " + keyTime_valueCouple.getValue().getPred());
+               // System.out.println("id = " + keyTime_valueCouple.getValue().getNodeA() + " entry = " + keyTime_valueCouple.getValue().getNodeB() + " time = " + keyTime_valueCouple.getKey() + " pred = " + keyTime_valueCouple.getValue().getPred());
 
                 if (previousEntryA == null && previousEntryB == null) { //init
                     
@@ -73,7 +82,7 @@ public class Core {
                     //System.out.println("inc enc by = "+n+" owner = "+keyTime_valueCouple.getValue().getNodeA());
                     if ( tmpEnc > data.getEstimatedEnc(keyTime_valueCouple.getValue()) ) {
                         data.addEstimatedEnc(keyTime_valueCouple.getValue(), tmpEnc -  data.getEstimatedEnc(keyTime_valueCouple.getValue()));
-                       // System.out.println("align first");
+                      //  System.out.println("align first");
                     }
 
                 } else if (previousEntryB == null) {
@@ -84,7 +93,7 @@ public class Core {
                     //System.out.println("start NodeB with "+keyTime_valueCouple.getValue().getNodeA()+" first enc = "+tmpEnc);
                     if ( tmpEnc < data.getEstimatedEnc(keyTime_valueCouple.getValue()) ) {
                         tmpEnc = data.getEstimatedEnc(keyTime_valueCouple.getValue());
-                        //System.out.println("align second");
+                       // System.out.println("align second");
                     }
 
                 } else {
@@ -95,20 +104,23 @@ public class Core {
                     //System.out.println("inc enc by = "+n+" owner = "+keyTime_valueCouple.getValue().getNodeA());
                     if ( tmpEnc < data.getEstimatedEnc(keyTime_valueCouple.getValue()) ) {
                         tmpEnc = data.getEstimatedEnc(keyTime_valueCouple.getValue());
-                        //System.out.println("align second");
+                       // System.out.println("align second");
                     }
                 }
 
             }
             if (data.getEstimatedEnc(key) < tmpEnc) {
-                data.addEstimatedEnc( key, tmpEnc - data.getEstimatedEnc(key) );
+                data.addEstimatedEnc(key, tmpEnc - data.getEstimatedEnc(key) );
             }
+            
+            //System.out.println(" enc = " + data.getEstimatedEnc(key));
         }
 
     }
     
     public void extractData() {
         double rapport[] = new double[data.getEstimateEncList().size()];
+        double dataQuality[] = new double[data.getEstimateEncList().size()];
         int errorForCouple[] = new int[data.getEstimateEncList().size()];
         int sample[] = new int[data.getEstimateEncList().size()];
         int real[] = new int[data.getEstimateEncList().size()];
@@ -116,6 +128,57 @@ public class Core {
         int i = 0;
         
         for (Map.Entry<Couple, Integer> entry : data.getEstimateEncList().entrySet()) {
+            //System.out.println("entry " + entry.toString());
+            
+            
+            Map.Entry<Double, CouplePlus> previousEntryA = null;
+            Map.Entry<Double, CouplePlus> previousEntryB = null;
+            double sumA = 0;
+            int countA = 0;
+            double sumB = 0;
+            int countB = 0;
+            
+            for (Map.Entry<Double, CouplePlus> entry2: data.getPredForCouple().get(entry.getKey()).entrySet()) {
+                
+                //System.out.println("entry2 " + entry2.toString());
+                
+                if (previousEntryA == null && previousEntryB == null) {
+                    previousEntryA = entry2;
+                } else if ( previousEntryA != null && previousEntryA.getValue().getNodeA().equals(entry2.getValue().getNodeA()) ) {
+                    sumA += entry2.getKey() - previousEntryA.getKey();
+                    countA++;
+                    previousEntryA = entry2;
+                } else if ( previousEntryB != null && previousEntryB.getValue().getNodeA().equals(entry2.getValue().getNodeA())) {
+                    sumB += entry2.getKey() - previousEntryB.getKey();
+                    countB++;
+                     previousEntryB = entry2;
+                } else if ( previousEntryB == null ) {
+                    previousEntryB = entry2;
+                }
+            }
+            
+            //System.out.println("sumA "+sumA+" countA "+countA);
+            //System.out.println("sumB "+sumB+" countB "+countB);
+            
+            double averageA = (77400 - (double)sumA) / (double)countA;
+            double averageB = (77400 - (double)sumB) / (double)countB;
+            
+           // System.out.println("averageA "+averageA+" averageB "+averageB);
+            
+            if ( countA == 0 && countB == 0 )
+                continue;
+            else if ( countB == 0 ) {
+                dataQuality[i] = averageA;
+            } else if ( countA == 0 ) {
+                dataQuality[i] = averageB;
+            } else  {
+                dataQuality[i] = averageA + averageB;
+            }
+            
+            
+            
+            //System.out.println("sample[i] "+dataQuality[i]);
+            
             
             //calc real/est;
             if ( entry.getValue() == 0 && data.getRealEnc(entry.getKey()) == 0 ) {
@@ -127,8 +190,12 @@ public class Core {
                 rapport[i] = (double)data.getRealEnc(entry.getKey()) / (double)entry.getValue();
             }
             
+            
+            
+            
             //save sample
             sample[i] = data.getPredForCouple().get(entry.getKey()).size();
+            
             
             //calc error for couple
             errorForCouple[i] = data.getRealEnc(entry.getKey()) - entry.getValue();
@@ -140,7 +207,7 @@ public class Core {
             i++;
         }
         
-        printRes(rapport, errorForCouple, sample, real, noEnc);
+        printRes(rapport, errorForCouple, dataQuality, real, noEnc);
     }
 
     public void test() {
@@ -214,7 +281,7 @@ public class Core {
 //        printRes(tot+"\nTime : \n"+totTime);
 //    }
     
-    public void printRes(double[] rapport, int[] errorForCouple, int[] sample, int[] real, int noEnc) {
+    public void printRes(double[] rapport, int[] errorForCouple, double[] dataQuality, int[] real, int noEnc) {
         StringTokenizer st = new StringTokenizer(Extractor.dpsFileLocation);
         st.nextToken("-");
         st.nextToken("-");
@@ -243,7 +310,7 @@ public class Core {
             Row rowhead = sheet.createRow(0);
             rowhead.createCell(0).setCellValue("rapport");
             rowhead.createCell(1).setCellValue("errorForCouple");
-            rowhead.createCell(2).setCellValue("sample");
+            rowhead.createCell(2).setCellValue("dataQuality");
             rowhead.createCell(3).setCellValue("real");
             rowhead.createCell(7).setCellValue("est = 0");
             rowhead.createCell(8).setCellValue("Total Couple");
@@ -254,7 +321,7 @@ public class Core {
                     Row row = sheet.createRow(numRow);
                     row.createCell(0).setCellValue(rapport[j]);
                     row.createCell(1).setCellValue(errorForCouple[j]);
-                    row.createCell(2).setCellValue(sample[j]);
+                    row.createCell(2).setCellValue(dataQuality[j]);
                     row.createCell(3).setCellValue(real[j]);
                     numRow++;
                 }

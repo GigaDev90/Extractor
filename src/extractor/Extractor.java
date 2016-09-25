@@ -20,8 +20,10 @@ import util.DpsData;
  */
 public class Extractor {
 
-    public static final String dpsFileLocation = "/home/gabriele/Documenti/git/the-one/reports/PRoPHET-86400 - random Path_SpyDeliveryPredictabilitiesReport.txt";
+    //public static final String dpsFileLocation = "/home/gabriele/Documenti/git/the-one/reports/PRoPHET-30siu_SpyDeliveryPredictabilitiesReport.txt";
     public static final String adjFileLocation = "/home/gabriele/Documenti/git/the-one/reports/PRoPHET-86400 - random Path_AdjacencyGraphvizReport.txt";
+    public static final String dpsFileLocation = "/home/gabriele/Documenti/git/the-one/reports/PRoPHET-86400 - random Path_SpyDeliveryPredictabilitiesReport.txt";
+    //public static final String adjFileLocation = "/home/gabriele/Documenti/git/the-one/reports/PRoPHET-30siu_AdjacencyGraphvizReport.txt";
 
     /**
      * @param args the command line arguments
